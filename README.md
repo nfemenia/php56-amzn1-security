@@ -100,7 +100,7 @@ To go back to Amazon's packages, remove the repo file and downgrade:
 
 ```bash
 sudo rm /etc/yum.repos.d/php56-amzn1-security-full.repo
-sudo yum downgrade $(rpm -qa --qf '%{NAME} ' 'php56*' --queryformat '%{NAME}-%{VERSION}-%{RELEASE}\n' | grep '\.sec\|\.min' | sed 's/-5\.6\.40-.*//')
+sudo yum downgrade $(rpm -qa --qf '%{NAME} %{RELEASE}\n' 'php56*' | awk '$2 ~ /\.(sec|min)[0-9]+\./ {print $1}')
 sudo service php-fpm-5.6 restart
 ```
 
