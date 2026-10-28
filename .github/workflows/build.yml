@@ -1,0 +1,73 @@
+name: build
+
+# Build both variants on every push/PR. On a v* tag, also sign them and publish a release.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [full, min]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build RPMs and run the PHP test suite
+        run: build/docker-build.sh ${{ matrix.variant }} "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.variant }}
+          path: ${{ runner.temp }}/out/${{ matrix.variant }}
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: built
+      - name: Sign RPMs
+        env:
+          RPM_SIGNING_KEY: ${{ secrets.RPM_SIGNING_KEY }}
+          RPM_SIGNING_PASSPHRASE: ${{ secrets.RPM_SIGNING_PASSPHRASE }}
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q rpm
+          for v in full min; do release/sign.sh built/$v RPM-GPG-KEY; done
+      - name: Package
+        run: |
+          for v in full min; do
+            f=$(release/package.sh built/$v dist RPM-GPG-KEY | tail -1)
+            # Same tarball under a fixed name, so releases/latest/download/<name> always works
+            cp "$f" dist/php56-amzn1-security-$v.tar.gz
+            (cd dist && sha256sum php56-amzn1-security-$v.tar.gz > php56-amzn1-security-$v.tar.gz.sha256)
+          done
+          cp RPM-GPG-KEY dist/
+          cp built/full/*.src.rpm built/min/*.src.rpm dist/
+          ls -la dist
+      - uses: actions/attest-build-provenance@v2
+        if: github.event.repository.visibility == 'public'
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            built/*/*.x86_64.rpm
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --notes-file docs/release-notes.md

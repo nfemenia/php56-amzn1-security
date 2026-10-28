@@ -1,0 +1,56 @@
+# Tests allowed to fail in this variant. One path per line; "# flaky" = may pass or fail.
+# Anything failing that is not listed here fails the build (tests/compare-results.sh).
+
+# Already failing on Amazon's unpatched 1.144 build in amazonlinux:2018.03:
+# tzdata newer than the tests (ext/date), expired test certificates and OpenSSL 1.0.2
+# behaviour (ext/openssl), and root ownership inside the container (ext/spl).
+ext/date/tests/bug20382-2.phpt
+ext/date/tests/bug27780.phpt
+ext/date/tests/bug32086.phpt
+ext/date/tests/bug33414-1.phpt
+ext/date/tests/bug33414-2.phpt
+ext/date/tests/bug33415-1.phpt
+ext/date/tests/bug33415-2.phpt
+ext/date/tests/bug48097.phpt
+ext/date/tests/bug51819.phpt
+ext/date/tests/date_modify-1.phpt
+ext/date/tests/date_sunrise_variation9.phpt
+ext/date/tests/date_sunset_variation9.phpt
+ext/date/tests/getdate_variation7.phpt
+ext/date/tests/strtotime3-64bit.phpt
+ext/openssl/tests/bug48182.phpt
+ext/openssl/tests/bug54992.phpt
+ext/openssl/tests/bug65538_001.phpt
+ext/openssl/tests/bug69215.phpt
+ext/openssl/tests/capture_peer_cert_001.phpt
+ext/openssl/tests/openssl_error_string_basic.phpt
+ext/openssl/tests/openssl_peer_fingerprint_basic.phpt
+ext/openssl/tests/peer_verification.phpt
+ext/openssl/tests/session_meta_capture.phpt
+ext/openssl/tests/sni_server.phpt
+ext/openssl/tests/stream_crypto_flags_001.phpt
+ext/openssl/tests/stream_crypto_flags_002.phpt
+ext/openssl/tests/stream_crypto_flags_003.phpt
+ext/openssl/tests/stream_crypto_flags_004.phpt
+ext/openssl/tests/stream_verify_peer_name_002.phpt
+ext/openssl/tests/stream_verify_peer_name_003.phpt
+ext/spl/tests/DirectoryIterator_getGroup_basic.phpt
+ext/spl/tests/DirectoryIterator_getOwner_basic.phpt
+
+# Deliberate behaviour changes of the PHP2Shell fix (docs/behaviour-changes.md):
+# upload progress is always disabled, and running out of memory ends the process.
+ext/session/tests/rfc1867.phpt
+ext/session/tests/rfc1867_inter.phpt
+ext/session/tests/rfc1867_sid_cookie.phpt
+ext/session/tests/rfc1867_sid_get.phpt
+ext/session/tests/rfc1867_sid_get_2.phpt
+ext/session/tests/rfc1867_sid_invalid.phpt
+ext/session/tests/rfc1867_sid_only_cookie.phpt
+ext/session/tests/rfc1867_sid_post.phpt
+tests/lang/bug45392.phpt
+
+# Tests added by the backports:
+# Amazon links the system PCRE, whose error message differs; the fix itself works.
+ext/pcre/tests/bug75457.phpt
+# The original "bad write retry" bug is fixed; the test server can reset the connection first.
+ext/openssl/tests/bug72333.phpt # flaky
