@@ -51,4 +51,4 @@ Current full build: <code>$VERSION</code>.</p>
 sudo yum update 'php56*'</pre>
 <p>Read the <a href="https://github.com/${GITHUB_REPOSITORY:-nfemenia/php56-amzn1-security}#install-with-yum">README</a> first.</p>
 EOF
-find "$SITE" -maxdepth 2 | sort
+ls -R "$SITE"
