@@ -239,7 +239,7 @@ index 719f9c5..dab0599 100644
  ZEND_API void _efree(void *ptr ZEND_FILE_LINE_DC ZEND_FILE_LINE_ORIG_DC);
  ZEND_API void *_ecalloc(size_t nmemb, size_t size ZEND_FILE_LINE_DC ZEND_FILE_LINE_ORIG_DC) ZEND_ATTRIBUTE_MALLOC ZEND_ATTRIBUTE_ALLOC_SIZE2(1,2);
 diff --git a/Zend/zend_execute_API.c b/Zend/zend_execute_API.c
-index bf754d2..a7a7b9b 100644
+index bf754d2..a8ebc1a 100644
 --- a/Zend/zend_execute_API.c
 +++ b/Zend/zend_execute_API.c
 @@ -307,6 +307,10 @@ void shutdown_executor(TSRMLS_D) /* {{{ */
@@ -253,6 +253,20 @@ index bf754d2..a7a7b9b 100644
  	zend_try {
  		clean_non_persistent_constants(TSRMLS_C);
  	} zend_end_try();
+@@ -328,6 +332,13 @@ void shutdown_executor(TSRMLS_D) /* {{{ */
+ 		}
+ 	} zend_end_try();
+ 
++	/* may be used by zend_error before init_executor: the destroy calls above
++	 * free these but leave the pointers set */
++	memset(&EG(user_error_handlers_error_reporting), 0, sizeof(EG(user_error_handlers_error_reporting)));
++	memset(&EG(user_error_handlers), 0, sizeof(EG(user_error_handlers)));
++	memset(&EG(user_exception_handlers), 0, sizeof(EG(user_exception_handlers)));
++	EG(in_autoload) = NULL;
++
+ 	zend_shutdown_fpu(TSRMLS_C);
+ 
+ 	EG(active) = 0;
 diff --git a/Zend/zend_gc.c b/Zend/zend_gc.c
 index e72655c..e7c5098 100644
 --- a/Zend/zend_gc.c
@@ -6436,10 +6450,19 @@ index af9c558..1554aaa 100644
  	int resolved_basedir_len;
  	int resolved_name_len;
 diff --git a/main/main.c b/main/main.c
-index 6d42f0e..c09b0b8 100644
+index 6d42f0e..8334946 100644
 --- a/main/main.c
 +++ b/main/main.c
-@@ -1881,6 +1881,8 @@ void php_request_shutdown(void *dummy)
+@@ -1785,6 +1785,8 @@ void php_request_shutdown_for_hook(void *dummy)
+ 		for (i = 0; i < NUM_TRACK_VARS; i++) {
+ 			if (PG(http_globals)[i]) {
+ 				zval_ptr_dtor(&PG(http_globals)[i]);
++				/* May be accessed before php_request_startup() */
++				PG(http_globals)[i] = NULL;
+ 			}
+ 		}
+ 	} zend_end_try();
+@@ -1881,6 +1883,8 @@ void php_request_shutdown(void *dummy)
  		for (i=0; i<NUM_TRACK_VARS; i++) {
  			if (PG(http_globals)[i]) {
  				zval_ptr_dtor(&PG(http_globals)[i]);
@@ -6448,7 +6471,7 @@ index 6d42f0e..c09b0b8 100644
  			}
  		}
  	} zend_end_try();
-@@ -1938,6 +1940,9 @@ void php_request_shutdown(void *dummy)
+@@ -1938,6 +1942,9 @@ void php_request_shutdown(void *dummy)
  #ifdef HAVE_DTRACE
  	DTRACE_REQUEST_SHUTDOWN(SAFE_FILENAME(SG(request_info).path_translated), SAFE_FILENAME(SG(request_info).request_uri), (char *)SAFE_FILENAME(SG(request_info).request_method));
  #endif /* HAVE_DTRACE */
@@ -6556,7 +6579,7 @@ index 6da79bd..606a4b0 100644
  			val = estrndup("", val_len);
  			if (sapi_module.input_filter(arg, var, &val, val_len, &new_val_len TSRMLS_CC)) {
 diff --git a/main/rfc1867.c b/main/rfc1867.c
-index 19358fb..f6343e6 100644
+index 19358fb..1b1bfbc 100644
 --- a/main/rfc1867.c
 +++ b/main/rfc1867.c
 @@ -400,6 +400,14 @@ static int find_boundary(multipart_buffer *self, char *boundary TSRMLS_DC)
@@ -6588,7 +6611,7 @@ index 19358fb..f6343e6 100644
 +				key = NULL;
 +			} else {
 +				key = estrdup(line);
-+				do { value++; } while(isspace(*value));
++				do { value++; } while(isspace((unsigned char)*value));
 +				smart_str_appends(&buf_value, value);
 +			}
  		} else if (buf_value.c) { /* If no ':' on the line, add to previous line */

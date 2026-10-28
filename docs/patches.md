@@ -11,6 +11,14 @@ is deb.sury.org's `0261-Avoid-state-corruption-via-bailout.patch` byte for byte:
 "minimal mitigation for EOL version" of CVE-2026-109618 and CVE-2026-109619. It applies to
 Amazon's tree unchanged. See [behaviour-changes.md](behaviour-changes.md).
 
+Both variants then apply [`patches/common/0265-php2shell-clear-freed-shutdown-state.patch`](../patches/common/0265-php2shell-clear-freed-shutdown-state.patch),
+ours: three parts of the upstream fix ([php/php-src@712e60f9](https://github.com/php/php-src/commit/712e60f9edfd03f0960fc4fc3c2c375f42b90aa2))
+that 0261 leaves out. At the end of each request PHP 5.6 frees the user error/exception handler
+stacks and the autoload guard table but leaves the pointers set; the patch clears them, so an error
+raised before the next request starts cannot reach freed memory. It also clears `$_GET`/`$_POST`/…
+in `php_request_shutdown_for_hook()` (unused by the bundled SAPIs) and adds upstream's
+`isspace((unsigned char)…)` cast. Added in `sec2`/`min2`.
+
 ## `full`: everything deb.sury.org fixed after 5.6.40
 
 [`patches/full/series/`](../patches/full/series/) holds Ondřej Surý's patches **unmodified**, copied from
@@ -19,6 +27,7 @@ the php5.6 `5.6.40-105` Debian source package, in the order listed in
 (the `NEWS` file differs between the trees and is not packaged).
 
 - 140 of Ondřej's patches 0056–0264, including 0261 (PHP2Shell).
+- `../../common/0265-…`: the patch described under `min` above, applied last.
 - `0260-openssl_encrypt-wrap-overflow-ported-to-amzn.patch`: Ondřej's 0260 does not apply to Amazon's
   `openssl.c`; this is the same fix placed by hand (both `outlen` calculations get the wrap-mode
   padding).

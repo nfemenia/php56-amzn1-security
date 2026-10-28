@@ -45,9 +45,10 @@ case "$VARIANT" in
     CHANGE="Backport post-5.6.40 security fixes from deb.sury.org php5.6 $SURY_VERSION, incl. CVE-2026-109618, CVE-2026-109619"
     ;;
   min)
-    cp "$REPO/patches/min/php2shell-CVE-2026-109618-109619.patch" "$SOURCES/"
-    sed -i '/^Patch10002: CVE-2023-0662.patch/a Patch10003: php2shell-CVE-2026-109618-109619.patch' "$SPEC"
-    sed -i '/^%patch10002 -p1/a %patch10003 -p1' "$SPEC"
+    cp "$REPO/patches/min/php2shell-CVE-2026-109618-109619.patch" \
+       "$REPO/patches/common/0265-php2shell-clear-freed-shutdown-state.patch" "$SOURCES/"
+    sed -i '/^Patch10002: CVE-2023-0662.patch/a Patch10003: php2shell-CVE-2026-109618-109619.patch\nPatch10004: 0265-php2shell-clear-freed-shutdown-state.patch' "$SPEC"
+    sed -i '/^%patch10002 -p1/a %patch10003 -p1\n%patch10004 -p1' "$SPEC"
     CHANGE="Fix CVE-2026-109618, CVE-2026-109619 (PHP2Shell), backported from deb.sury.org php5.6 $SURY_VERSION"
     ;;
 esac

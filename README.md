@@ -25,8 +25,8 @@ If both match, yes. x86_64 only.
 
 | Variant | Release | Contents |
 |---|---|---|
-| **full** (recommended) | `5.6.40-1.144.sec1.amzn1` | 140 of deb.sury.org's post-5.6.40 security fixes, including PHP2Shell ([list](docs/patches.md)) |
-| **min** | `5.6.40-1.144.min1.amzn1` | Only the PHP2Shell fix, for the smallest possible change |
+| **full** (recommended) | `5.6.40-1.144.sec2.amzn1` | 140 of deb.sury.org's post-5.6.40 security fixes, including PHP2Shell ([list](docs/patches.md)) |
+| **min** | `5.6.40-1.144.min2.amzn1` | Only the PHP2Shell fix, for the smallest possible change |
 
 Both change two behaviours: **session upload progress is always off**, and **a script that hits
 `memory_limit` ends its process** without running shutdown functions. Read
@@ -54,7 +54,7 @@ sudo ./install.sh                  # or: sudo ./install.sh --check-url https://y
 ```
 
 Each [release](../../releases) also has the same tarballs under versioned names
-(`php56-amzn1-security-5.6.40-1.144.sec1.tar.gz`), for pinning an exact version.
+(`php56-amzn1-security-5.6.40-1.144.sec2.tar.gz`), for pinning an exact version.
 
 `install.sh`:
 
@@ -120,7 +120,7 @@ The attestation proves the tarball was built by this repository's
 [`build/build.sh`](build/build.sh) runs in a throwaway `amazonlinux:2018.03` container:
 
 1. downloads `php56-5.6.40-1.144.amzn1.src.rpm` from Amazon's repository;
-2. adds one patch after Amazon's last (`Patch10003`) and appends `.sec1`/`.min1` to the release;
+2. adds our patches after Amazon's last (`Patch10003`, plus `Patch10004` for min) and appends `.sec2`/`.min2` to the release;
 3. builds with `rpmbuild` exactly as Amazon's spec does;
 4. runs PHP's test suite (about 13,900 tests) and fails if anything fails that is not listed in
    [`tests/expected-failures-*.txt`](tests/), each entry with its reason.
@@ -149,12 +149,12 @@ No test that passes on Amazon's build fails on ours for any other reason.
    gpg --quick-generate-key "php56-amzn1-security <you@example.com>" rsa4096 sign 5y
    gpg --armor --export-secret-keys <KEYID> | gh secret set RPM_SIGNING_KEY
    ```
-2. Push a tag: `git tag v5.6.40-1.144.sec1 && git push --tags`. The [workflow](.github/workflows/build.yml)
+2. Push a tag: `git tag v5.6.40-1.144.sec2 && git push --tags`. The [workflow](.github/workflows/build.yml)
    builds both variants, runs the tests, signs, packages, attests and publishes the release.
 
 When deb.sury.org ships new fixes: add the patches to `patches/full/series/` and its `series` file,
 run `build/regen-backports.sh`, bump `FULL_SUFFIX` in [`build/versions.env`](build/versions.env)
-(`sec1` → `sec2`) and tag.
+(`sec2` → `sec3`; `MIN_SUFFIX` too if min changes) and tag.
 
 ## Credits and license
 

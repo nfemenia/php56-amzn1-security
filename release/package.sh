@@ -2,7 +2,7 @@
 # Pack built RPMs with install.sh/rollback.sh into a release tarball.
 # Usage: release/package.sh <rpm-dir> <output-dir> [RPM-GPG-KEY]
 # Produces <output-dir>/php56-amzn1-security-<version>.tar.gz and its .sha256,
-# e.g. php56-amzn1-security-5.6.40-1.144.sec1.tar.gz
+# e.g. php56-amzn1-security-5.6.40-1.144.sec2.tar.gz
 set -euo pipefail
 RPMDIR="${1:?usage: package.sh <rpm-dir> <output-dir> [RPM-GPG-KEY]}"
 OUTDIR="${2:?usage: package.sh <rpm-dir> <output-dir> [RPM-GPG-KEY]}"

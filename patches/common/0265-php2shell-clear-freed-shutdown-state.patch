@@ -1,0 +1,53 @@
+From: php56-amzn1-security
+Subject: Clear request state freed at shutdown (completes the CVE-2026-109618/109619 backport)
+
+Applies after deb.sury.org's 0261-Avoid-state-corruption-via-bailout.patch. Three parts of the
+upstream fix (php/php-src@712e60f9, PHP-7.4) that 0261 leaves out:
+
+- shutdown_executor(): the user error/exception handler stacks and EG(in_autoload) are freed but
+  keep pointing at the freed memory. Upstream zeroes the stacks ("may be used by zend_error before
+  init_executor"); EG(in_autoload) is reset for the same reason, as in vperetti's 5.6 backport
+  (github.com/vperetti/php-cve-2026-109618-109619-backports).
+- php_request_shutdown_for_hook(): clears PG(http_globals) like 0261 does in php_request_shutdown().
+  No bundled SAPI calls it; third-party ones may.
+- multipart_buffer_headers(): isspace((unsigned char)...) as upstream.
+
+---
+--- a/Zend/zend_execute_API.c
++++ b/Zend/zend_execute_API.c
+@@ -332,6 +332,13 @@
+ 		}
+ 	} zend_end_try();
+ 
++	/* may be used by zend_error before init_executor: the destroy calls above
++	 * free these but leave the pointers set */
++	memset(&EG(user_error_handlers_error_reporting), 0, sizeof(EG(user_error_handlers_error_reporting)));
++	memset(&EG(user_error_handlers), 0, sizeof(EG(user_error_handlers)));
++	memset(&EG(user_exception_handlers), 0, sizeof(EG(user_exception_handlers)));
++	EG(in_autoload) = NULL;
++
+ 	zend_shutdown_fpu(TSRMLS_C);
+ 
+ 	EG(active) = 0;
+--- a/main/main.c
++++ b/main/main.c
+@@ -1784,6 +1784,8 @@
+ 		for (i = 0; i < NUM_TRACK_VARS; i++) {
+ 			if (PG(http_globals)[i]) {
+ 				zval_ptr_dtor(&PG(http_globals)[i]);
++				/* May be accessed before php_request_startup() */
++				PG(http_globals)[i] = NULL;
+ 			}
+ 		}
+ 	} zend_end_try();
+--- a/main/rfc1867.c
++++ b/main/rfc1867.c
+@@ -455,7 +455,7 @@
+ 				key = NULL;
+ 			} else {
+ 				key = estrdup(line);
+-				do { value++; } while(isspace(*value));
++				do { value++; } while(isspace((unsigned char)*value));
+ 				smart_str_appends(&buf_value, value);
+ 			}
+ 		} else if (buf_value.c) { /* If no ':' on the line, add to previous line */

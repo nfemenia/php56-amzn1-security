@@ -139,3 +139,4 @@
 0259-fix-test-name.patch
 0261-Avoid-state-corruption-via-bailout.patch
 0260-openssl_encrypt-wrap-overflow-ported-to-amzn.patch
+../../common/0265-php2shell-clear-freed-shutdown-state.patch
