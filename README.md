@@ -1,4 +1,4 @@
-# php56-amzn1-security
+# php56-amzn1-security: patched PHP 5.6 for Amazon Linux 1
 
 Security-patched **php56** packages for **Amazon Linux AMI 2018.03** (Amazon Linux 1), for servers that
 still run Amazon's `php56` RPMs and cannot move to a supported PHP or OS yet.
@@ -77,6 +77,31 @@ To go back to Amazon's packages:
 
 ```bash
 sudo ./rollback.sh                 # reinstalls the backed-up RPMs and removes the exclude
+```
+
+## Install with yum
+
+The same signed RPMs are also published as yum repositories at
+<https://nfemenia.github.io/php56-amzn1-security/>, so later releases arrive with `yum update`:
+
+```bash
+sudo curl -fLo /etc/yum.repos.d/php56-amzn1-security-full.repo https://nfemenia.github.io/php56-amzn1-security/php56-amzn1-security-full.repo
+sudo yum update 'php56*'
+sudo service php-fpm-5.6 restart       # or: sudo service httpd restart
+```
+
+(`-min` instead of `-full` for the PHP2Shell-only variant. Use one of the two, not both.)
+
+This is plain yum: no backup, no module check and no automatic restart. `install.sh` does all of
+those and is the safer choice for production. Only packages you already have are upgraded; yum does
+not add new ones unless you ask for them.
+
+To go back to Amazon's packages, remove the repo file and downgrade:
+
+```bash
+sudo rm /etc/yum.repos.d/php56-amzn1-security-full.repo
+sudo yum downgrade $(rpm -qa --qf '%{NAME} ' 'php56*' --queryformat '%{NAME}-%{VERSION}-%{RELEASE}\n' | grep '\.sec\|\.min' | sed 's/-5\.6\.40-.*//')
+sudo service php-fpm-5.6 restart
 ```
 
 ### Verifying where a download came from

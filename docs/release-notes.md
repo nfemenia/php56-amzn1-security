@@ -15,4 +15,6 @@ sudo ./install.sh --dry-run
 sudo ./install.sh
 ```
 
+Or with yum, from the repositories at https://nfemenia.github.io/php56-amzn1-security/ ([how](../../blob/main/README.md#install-with-yum)).
+
 Read [behaviour changes](../../blob/main/docs/behaviour-changes.md) before installing. Undo with `sudo ./rollback.sh`.

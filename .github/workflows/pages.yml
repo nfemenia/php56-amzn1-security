@@ -1,0 +1,46 @@
+name: pages
+
+# Publish the latest release's signed RPMs as yum repositories on GitHub Pages.
+# build.yml starts this after each release; it can also be run by hand.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir in
+          gh release download --dir in \
+            -p 'php56-amzn1-security-full.tar.gz*' -p 'php56-amzn1-security-min.tar.gz*' -p RPM-GPG-KEY
+          (cd in && sha256sum -c php56-amzn1-security-full.tar.gz.sha256 php56-amzn1-security-min.tar.gz.sha256)
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Build yum repositories
+        run: |
+          docker run --rm -e GITHUB_REPOSITORY -v "$PWD:/w" -w /w amazonlinux:2018.03 \
+            release/yum-repo.sh in site "${{ steps.pages.outputs.base_url }}"
+          sudo chown -R "$(id -u)" site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
